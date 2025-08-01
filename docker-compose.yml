@@ -1,0 +1,20 @@
+# Docker Compose для nginx
+version: '3.8'
+
+services:
+  nginx-devops:
+    build: .
+    container_name: nginx-devops
+    ports:
+      - "8080:80"
+    restart: unless-stopped
+    # Проверка здоровья
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    labels:
+      - "com.example.description=DevOps Test Task Nginx"
+      - "com.example.version=1.0" 

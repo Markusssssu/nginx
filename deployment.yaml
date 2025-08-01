@@ -1,0 +1,67 @@
+# Kubernetes deployment для nginx
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-devops
+  labels:
+    app: nginx-devops
+    version: v1
+spec:
+  # Одна реплика
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nginx-devops
+  template:
+    metadata:
+      labels:
+        app: nginx-devops
+        version: v1
+    spec:
+      containers:
+      - name: nginx
+        # Образ nginx
+        image: nginx:stable
+        ports:
+        # Порт 80
+        - containerPort: 80
+          name: http
+        # Проверка готовности
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        # Проверка жизнеспособности
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 15
+          periodSeconds: 20
+        # Ограничения ресурсов
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "50m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+---
+# Сервис для доступа к nginx
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-devops-service
+  labels:
+    app: nginx-devops
+spec:
+  type: ClusterIP
+  ports:
+  - port: 80
+    targetPort: 80
+    protocol: TCP
+    name: http
+  selector:
+    app: nginx-devops 

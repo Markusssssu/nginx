@@ -1,0 +1,10 @@
+# Файлы, которые не нужны в Docker образе
+.git
+.gitignore
+README.md
+.dockerignore
+Dockerfile
+*.md
+scripts/
+.gitlab-ci.yml
+deployment.yaml 

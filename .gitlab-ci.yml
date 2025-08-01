@@ -1,0 +1,27 @@
+# GitLab CI/CD пайплайн для тестирования nginx
+stages:
+  - test
+
+# Тестируем nginx
+test:
+  stage: test
+  image: ubuntu:20.04
+
+  # Устанавливаем nginx
+  before_script:
+    - apt-get update -qq
+    - apt-get install -y nginx
+
+  # Проверяем nginx
+  script:
+    - echo "Проверяем наличие nginx..."
+    - which nginx
+    - echo "Проверяем версию nginx..."
+    - nginx -v
+    - echo "Проверяем статус nginx..."
+    - systemctl status nginx || echo "Nginx не запущен как systemd сервис в контейнере"
+    - echo "Проверяем конфигурацию nginx..."
+    - nginx -t
+
+  tags:
+    - docker
