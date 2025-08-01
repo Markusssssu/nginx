@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# Главный скрипт для DevOps тестового задания
-# Управляет всеми аспектами проекта
+# Умный скрипт для DevOps тестового задания
+# Автоматически устанавливает все необходимое и запускает проект
 
 set -e
 
@@ -16,17 +16,147 @@ NC='\033[0m' # No Color
 show_menu() {
     echo -e "${BLUE}=== DevOps Test Task - Главное меню ===${NC}"
     echo ""
-    echo -e "${GREEN}1.${NC} Установить nginx локально"
-    echo -e "${GREEN}2.${NC} Установить Docker"
-    echo -e "${GREEN}3.${NC} Запустить Docker контейнер"
-    echo -e "${GREEN}4.${NC} Запустить с docker-compose"
-    echo -e "${GREEN}5.${NC} Развернуть в Kubernetes"
-    echo -e "${GREEN}6.${NC} Проверить статус всех сервисов"
-    echo -e "${GREEN}7.${NC} Остановить все сервисы"
-    echo -e "${GREEN}8.${NC} Очистить все (Docker + nginx)"
-    echo -e "${GREEN}9.${NC} Показать логи"
+    echo -e "${GREEN}1.${NC} Автоматическая установка и запуск (ВСЕ СРАЗУ!)"
+    echo -e "${GREEN}2.${NC} Установить nginx локально"
+    echo -e "${GREEN}3.${NC} Установить Docker"
+    echo -e "${GREEN}4.${NC} Запустить Docker контейнер"
+    echo -e "${GREEN}5.${NC} Запустить с docker-compose"
+    echo -e "${GREEN}6.${NC} Развернуть в Kubernetes"
+    echo -e "${GREEN}7.${NC} Проверить статус всех сервисов"
+    echo -e "${GREEN}8.${NC} Остановить все сервисы"
+    echo -e "${GREEN}9.${NC} Очистить все (Docker + nginx)"
+    echo -e "${GREEN}10.${NC} Показать логи"
     echo -e "${GREEN}0.${NC} Выход"
     echo ""
+}
+
+# Функция для автоматической установки всего
+auto_install_all() {
+    echo -e "${BLUE}=== Автоматическая установка и запуск проекта ===${NC}"
+    echo ""
+    
+    # Проверяем систему
+    if ! command -v apt-get &> /dev/null; then
+        echo -e "${RED}Ошибка: Этот скрипт предназначен для Ubuntu/Debian систем${NC}"
+        return 1
+    fi
+
+    # Обновляем систему
+    echo -e "${YELLOW}1. Обновляем систему...${NC}"
+    sudo apt update && sudo apt upgrade -y
+
+    # Проверяем и устанавливаем nginx
+    echo -e "${YELLOW}2. Проверяем nginx...${NC}"
+    if ! command -v nginx &> /dev/null; then
+        echo "Nginx не установлен. Устанавливаем..."
+        sudo apt install -y nginx
+        sudo systemctl start nginx
+        sudo systemctl enable nginx
+        echo -e "${GREEN}Nginx установлен и запущен!${NC}"
+    else
+        echo -e "${GREEN}Nginx уже установлен.${NC}"
+        sudo systemctl start nginx 2>/dev/null || true
+    fi
+
+    # Проверяем и устанавливаем Docker
+    echo -e "${YELLOW}3. Проверяем Docker...${NC}"
+    if ! command -v docker &> /dev/null; then
+        echo "Docker не установлен. Устанавливаем..."
+        
+        # Устанавливаем необходимые пакеты
+        sudo apt install -y apt-transport-https ca-certificates curl gnupg lsb-release
+
+        # Добавляем GPG ключ Docker
+        curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+
+        # Добавляем репозиторий Docker
+        echo "deb [arch=amd64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+
+        # Устанавливаем Docker
+        sudo apt update
+        sudo apt install -y docker-ce docker-ce-cli containerd.io
+
+        # Добавляем пользователя в группу docker
+        sudo usermod -aG docker $USER
+
+        # Запускаем Docker
+        sudo service docker start
+        
+        echo -e "${GREEN}Docker установлен!${NC}"
+        echo "Перезапустите WSL или выполните: newgrp docker"
+    else
+        echo -e "${GREEN}Docker уже установлен.${NC}"
+        sudo service docker start 2>/dev/null || true
+    fi
+
+    # Проверяем и устанавливаем docker-compose
+    echo -e "${YELLOW}4. Проверяем docker-compose...${NC}"
+    if ! command -v docker-compose &> /dev/null; then
+        echo "Docker Compose не установлен. Устанавливаем..."
+        sudo curl -L "https://github.com/docker/compose/releases/download/v2.20.0/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+        sudo chmod +x /usr/local/bin/docker-compose
+        echo -e "${GREEN}Docker Compose установлен!${NC}"
+    else
+        echo -e "${GREEN}Docker Compose уже установлен.${NC}"
+    fi
+
+    # Собираем и запускаем проект
+    echo -e "${YELLOW}5. Запускаем проект...${NC}"
+    
+    # Останавливаем старые контейнеры
+    docker stop nginx-devops 2>/dev/null || true
+    docker rm nginx-devops 2>/dev/null || true
+    docker-compose down 2>/dev/null || true
+
+    # Собираем образ
+    echo "Собираем Docker образ..."
+    docker build -t nginx-devops .
+
+    # Запускаем с docker-compose
+    echo "Запускаем с docker-compose..."
+    docker-compose up -d
+
+    # Ждем запуска
+    echo "Ждем запуска..."
+    sleep 5
+
+    # Проверяем результат
+    echo -e "${YELLOW}6. Проверяем результат...${NC}"
+    
+    echo -e "${BLUE}=== Nginx (локальный) ===${NC}"
+    if systemctl is-active --quiet nginx; then
+        echo -e "${GREEN}✅ Nginx: Активен${NC}"
+        if curl -s localhost > /dev/null; then
+            echo "   Доступен по адресу: http://localhost"
+        else
+            echo "   ⚠️  Не отвечает"
+        fi
+    else
+        echo -e "${RED}❌ Nginx: Не активен${NC}"
+    fi
+
+    echo -e "${BLUE}=== Docker контейнер ===${NC}"
+    if docker ps | grep -q nginx-devops; then
+        echo -e "${GREEN}✅ Docker контейнер: Запущен${NC}"
+        if curl -s localhost:8080 > /dev/null; then
+            echo "   Доступен по адресу: http://localhost:8080"
+            echo "   Содержимое: $(curl -s localhost:8080 | grep -o '<h1>[^<]*</h1>' | sed 's/<[^>]*>//g')"
+        else
+            echo "   ⚠️  Не отвечает"
+        fi
+    else
+        echo -e "${RED}❌ Docker контейнер: Не запущен${NC}"
+    fi
+
+    echo ""
+    echo -e "${GREEN}=== Установка завершена! ===${NC}"
+    echo ""
+    echo "🎯 Результат:"
+    echo "• Nginx установлен локально: http://localhost"
+    echo "• Docker контейнер запущен: http://localhost:8080"
+    echo "• Все готово для демонстрации!"
+    echo ""
+    echo "💡 Для проверки статуса выберите опцию 7"
 }
 
 # Функция для установки nginx
@@ -37,6 +167,15 @@ install_nginx() {
     if ! command -v apt-get &> /dev/null; then
         echo -e "${RED}Ошибка: Этот скрипт предназначен для Ubuntu/Debian систем${NC}"
         return 1
+    fi
+
+    # Проверяем, установлен ли уже nginx
+    if command -v nginx &> /dev/null; then
+        echo -e "${GREEN}Nginx уже установлен!${NC}"
+        sudo systemctl start nginx
+        sudo systemctl enable nginx
+        sudo systemctl status nginx
+        return 0
     fi
 
     # Обновляем пакеты
@@ -68,6 +207,13 @@ install_docker() {
     if ! command -v apt-get &> /dev/null; then
         echo -e "${RED}Ошибка: Этот скрипт предназначен для Ubuntu/Debian систем${NC}"
         return 1
+    fi
+
+    # Проверяем, установлен ли уже Docker
+    if command -v docker &> /dev/null; then
+        echo -e "${GREEN}Docker уже установлен!${NC}"
+        sudo service docker start 2>/dev/null || true
+        return 0
     fi
 
     # Обновляем систему
@@ -281,18 +427,19 @@ show_logs() {
 # Главный цикл
 while true; do
     show_menu
-    read -p "Выберите опцию (0-9): " choice
+    read -p "Выберите опцию (0-10): " choice
     
     case $choice in
-        1) install_nginx ;;
-        2) install_docker ;;
-        3) run_docker ;;
-        4) run_compose ;;
-        5) deploy_k8s ;;
-        6) check_status ;;
-        7) stop_all ;;
-        8) clean_all ;;
-        9) show_logs ;;
+        1) auto_install_all ;;
+        2) install_nginx ;;
+        3) install_docker ;;
+        4) run_docker ;;
+        5) run_compose ;;
+        6) deploy_k8s ;;
+        7) check_status ;;
+        8) stop_all ;;
+        9) clean_all ;;
+        10) show_logs ;;
         0) echo -e "${GREEN}До свидания!${NC}"; exit 0 ;;
         *) echo -e "${RED}Неверный выбор. Попробуйте снова.${NC}" ;;
     esac
