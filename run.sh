@@ -28,11 +28,11 @@ rainbow() {
 show_menu() {
     echo -e "${BLUE}=== DevOps Test Task ===${NC}"
     echo ""
-    $(rainbow "1. Полная установка")
-    $(rainbow "2. Kubernetes")
-    $(rainbow "3. Логи")
-    $(rainbow "4. Статус")
-    $(rainbow "0. Выход")
+    rainbow "1. Полная установка"
+    rainbow "2. Kubernetes"
+    rainbow "3. Логи"
+    rainbow "4. Статус"
+    rainbow "0. Выход"
     echo ""
 }
 
@@ -65,7 +65,7 @@ install_all() {
     docker build -t nginx-devops .
     docker-compose up -d
     
-    $(rainbow "Готово! Nginx: localhost, Docker: localhost:8080")
+    rainbow "Готово! Nginx: localhost, Docker: localhost:8080"
 }
 
 # Kubernetes
@@ -73,7 +73,7 @@ install_k8s() {
     echo -e "${YELLOW}Ставлю Kubernetes...${NC}"
     
     if command -v kubectl &> /dev/null; then
-        $(rainbow "Kubernetes уже есть!")
+        rainbow "Kubernetes уже есть!"
         return 0
     fi
     
@@ -118,7 +118,7 @@ EOF
     
     kubectl apply -f https://raw.githubusercontent.com/flannel-io/flannel/master/Documentation/kube-flannel.yml
     
-    $(rainbow "Kubernetes готов!")
+    rainbow "Kubernetes готов!"
     kubectl get nodes
 }
 
@@ -149,7 +149,7 @@ while true; do
         2) install_k8s ;;
         3) show_logs ;;
         4) check_status ;;
-        0) $(rainbow "Пока!"); exit 0 ;;
+        0) rainbow "Пока!"; exit 0 ;;
         *) echo -e "${RED}Неверно${NC}" ;;
     esac
     
