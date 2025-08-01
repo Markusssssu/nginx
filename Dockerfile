@@ -1,4 +1,4 @@
-# Docker образ с nginx и кастомной страницей
+# Docker образ с nginx 
 FROM nginx:stable
 
 # Метаданные образа
