@@ -1,6 +1,6 @@
 
 
-Этот репозиторий содержит выполнение тестового задания по DevOps, включающее настройку nginx, CI/CD пайплайн, Docker контейнеризацию и Kubernetes deployment.
+настройка nginx, CI/CD пайплайн, Docker контейнеризацию и Kubernetes deployment.
 
 ## Структура проекта
 
