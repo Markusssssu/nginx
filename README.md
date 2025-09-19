@@ -1,6 +1,6 @@
 
 
-настройка nginx, CI/CD пайплайн, Docker контейнеризацию и Kubernetes deployment.
+Настройка nginx, CI/CD пайплайн, Docker контейнеризацию и Kubernetes deployment.
 
 ## Структура проекта
 
